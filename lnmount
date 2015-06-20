@@ -124,7 +124,7 @@ mount.mount.find = function(path)
 	end
 end
 
-mount.mount.get = function(origin, destination)
+mount.mount.get = function(origin)
 	conn:send("fileQuery", origin)
 	local received = false
 	local data = ""
@@ -137,31 +137,18 @@ mount.mount.get = function(origin, destination)
 		elseif pack and pack.type == "FD" then
 			data = data..pack.payload
 		elseif pack and pack.type == "FE" then
-			local handle = fs.open(destination, "w")
-			if handle then
-				handle.write(data)
-				handle.close()
-			end
-			received = true
+			return data
 		end
 	until received
 end
 
-mount.mount.put = function(origin, destination)
-	if fs.exists(origin) then
-		conn:send("fileSend", destination)
-		local response = conn:listen(0.3)
-		if response and response.type == "FR" then
-			local handle = fs.open(origin, "r")
-			if handle then
-				conn:send("fileHeader", origin)
-				conn:send("fileData", handle.readAll())
-				handle.close()
-				conn:send("fileEnd", "eof")
-			else
-				conn:send("fileHeader", "FileOpenFailure")
-			end
-		end
+mount.mount.put = function(data, destination)
+	conn:send("fileSend", destination)
+	local response = conn:listen(0.3)
+	if response and response.type == "FR" then
+		conn:send("fileHeader", "data")
+		conn:send("fileData", data)
+		conn:send("fileEnd", "eof")
 	end
 end
 
