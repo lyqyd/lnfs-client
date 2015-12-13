@@ -124,44 +124,34 @@ mount.mount.find = function(path)
 	end
 end
 
-mount.mount.get = function(origin, destination)
-	conn:send("fileQuery", origin)
+mount.mount.get = function(path)
+	conn:send("fileQuery", path)
 	local received = false
-	local data = ""
+	local data = {}
 	repeat
 		local pack = conn:listen(0.3)
 		if pack and pack.type == "FH" then
-			if pack.payload ~= origin then
+			if pack.payload ~= path then
 				return false
 			end
 		elseif pack and pack.type == "FD" then
-			data = data..pack.payload
-		elseif pack and pack.type == "FE" then
-			local handle = fs.open(destination, "w")
-			if handle then
-				handle.write(data)
-				handle.close()
+			for i = 1, #pack.payload do
+				data[#data + 1] = pack.payload[i]
 			end
+		elseif pack and pack.type == "FE" then
 			received = true
 		end
 	until received
+	return data
 end
 
-mount.mount.put = function(origin, destination)
-	if fs.exists(origin) then
-		conn:send("fileSend", destination)
-		local response = conn:listen(0.3)
-		if response and response.type == "FR" then
-			local handle = fs.open(origin, "r")
-			if handle then
-				conn:send("fileHeader", origin)
-				conn:send("fileData", handle.readAll())
-				handle.close()
-				conn:send("fileEnd", "eof")
-			else
-				conn:send("fileHeader", "FileOpenFailure")
-			end
-		end
+mount.mount.put = function(data, path)
+	conn:send("fileSend", path)
+	local response = conn:listen(0.3)
+	if response and response.type == "FR" then
+		conn:send("fileHeader", path)
+		conn:send("fileData", data)
+		conn:send("fileEnd", "eof")
 	end
 end
 
