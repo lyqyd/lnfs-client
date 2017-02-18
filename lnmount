@@ -102,18 +102,22 @@ end
 
 mount.mount.makeDir = function(path)
 	conn:send("fileMakeDirectory", path)
+	local response = conn:listen(comm_wait)
 end
 
 mount.mount.move = function(origin, destination)
 	conn:send("fileMove", {origin = origin, destination = destination})
+	local response = conn:listen(comm_wait)
 end
 
 mount.mount.copy = function(origin, destination)
 	conn:send("fileCopy", {origin = origin, destination = destination})
+	local response = conn:listen(comm_wait)
 end
 
 mount.mount.delete = function(path)
 	conn:send("fileDelete", path)
+	local response = conn:listen(comm_wait)
 end
 
 mount.mount.find = function(path)
@@ -152,8 +156,11 @@ mount.mount.put = function(path, data)
 	local response = conn:listen(comm_wait)
 	if response and response.type == "FR" then
 		conn:send("fileHeader", path)
+		conn:listen(comm_wait)
 		conn:send("fileData", data)
+		conn:listen(comm_wait)
 		conn:send("fileEnd", "eof")
+		conn:listen(comm_wait)
 	end
 end
 
