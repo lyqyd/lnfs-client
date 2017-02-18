@@ -21,9 +21,11 @@ else
 	return
 end
 
+local comm_wait = 0.5
+
 local conn = connection.new(args[1], 21)
 
-local response = conn:open(0.5, args[2])
+local response = conn:open(comm_wait, args[2])
 if not response then
 	print("Connection to server failed!")
 	return
@@ -36,7 +38,7 @@ mount.mount = {}
 
 mount.mount.list = function(path)
 	conn:send("fileList", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result then
 		return result.payload
 	else
@@ -46,7 +48,7 @@ end
 
 mount.mount.exists = function(path)
 	conn:send("fileStatus", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result and result.payload then
 		return result.payload.exists
 	else
@@ -56,7 +58,7 @@ end
 
 mount.mount.isDir = function(path)
 	conn:send("fileStatus", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result and result.payload then
 		return result.payload.isDir
 	else
@@ -66,7 +68,7 @@ end
 
 mount.mount.isReadOnly = function(path)
 	conn:send("fileStatus", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result and result.payload then
 		return result.payload.isReadOnly
 	else
@@ -80,7 +82,7 @@ end
 
 mount.mount.getSize = function(path)
 	conn:send("fileStatus", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result and result.payload then
 		return result.payload.size
 	else
@@ -90,7 +92,7 @@ end
 
 mount.mount.getFreeSpace = function(path)
 	conn:send("fileStatus", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result and result.payload then
 		return result.payload.space
 	else
@@ -116,7 +118,7 @@ end
 
 mount.mount.find = function(path)
 	conn:send("fileFind", path)
-	local result = conn:listen(0.3)
+	local result = conn:listen(comm_wait)
 	if result and result.payload and result.type == "FI" then
 		return result.payload
 	else
@@ -129,7 +131,7 @@ mount.mount.get = function(path)
 	local received = false
 	local data = {}
 	repeat
-		local pack = conn:listen(0.3)
+		local pack = conn:listen(comm_wait)
 		if pack and pack.type == "FH" then
 			if pack.payload ~= path then
 				return false
@@ -145,9 +147,9 @@ mount.mount.get = function(path)
 	return data
 end
 
-mount.mount.put = function(data, path)
+mount.mount.put = function(path, data)
 	conn:send("fileSend", path)
-	local response = conn:listen(0.3)
+	local response = conn:listen(comm_wait)
 	if response and response.type == "FR" then
 		conn:send("fileHeader", path)
 		conn:send("fileData", data)
